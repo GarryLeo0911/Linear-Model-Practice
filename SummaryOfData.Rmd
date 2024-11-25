@@ -1,0 +1,42 @@
+---
+title: "Project"
+author: "Jiayi Li"
+date: "2024-09-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+# Load the data
+bodyFat <- read_csv("bodyfat.csv")
+
+# Create a new column that represents "BMI"
+bodyFat <- bodyFat %>%
+  mutate(BMI = `Weight(kg)` / ((Height / 100) ^ 2))
+
+BodyFatPercentage <- select(bodyFat, "BMI", "BodyFatSiriEqu")
+```
+
+
+```{r}
+# Load the table1 library
+library(table1)
+
+# Create a summary table for BMI and Body Fat Percentage (Pct.BF)
+table1::table1(~ BMI + BodyFatSiriEqu, data = BodyFatPercentage, overall = TRUE)
+```
+
+
+```{r}
+# Initial Visualization
+subset(BodyFatPercentage, BMI<=40) |>
+  ggplot() + 
+  aes(x=BMI, y=BodyFatSiriEqu) + 
+  geom_point()
+```

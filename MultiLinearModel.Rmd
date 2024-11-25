@@ -1,0 +1,117 @@
+---
+title: "bodyfatPrediction"
+author: "Jiayi Li"
+date: "2024-10-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+# Load the data
+raw_data <- read.table("bodyfat.txt", header = TRUE)
+
+bodyfat <- select(raw_data, "Pct.BF", "Abdomen", "Height")
+
+raw_data |>
+  ggplot() + 
+  aes(x=Age*Height, y=Pct.BF)+
+  geom_point()
+
+cor(data$Pct.BF, data$Age)
+```
+
+```{r}
+cor_mat = cor(raw_data)
+melted_cor_mat = cor_mat |>
+  data.frame() |> 
+  rownames_to_column(var = "var1") |> 
+  pivot_longer(cols = -var1, 
+               names_to = "var2",
+               values_to = "cor")
+melted_cor_mat |> ggplot() + 
+  aes(x=var1, y=var2, fill=cor) + 
+  geom_tile() + 
+  scale_fill_gradient2(
+    low = "blue", 
+    high = "red", 
+    mid = "white", 
+    midpoint = 0, 
+    limit = c(-1,1)) +
+  theme(
+    axis.text.x = element_text(
+      angle = 90, hjust = 1
+    )
+  )
+```
+
+```{r}
+data <- raw_data
+data$Density <- NULL
+model <- lm(Pct.BF ~ ., data = data)
+step_wise_model <- step(model, direction = "both")
+
+summary(step_wise_model)
+```
+
+```{r}
+linear_model <- lm(Pct.BF ~ Age + Wrist + Waist + Height, data = data)
+
+summary(linear_model)
+```
+
+
+```{r}
+plot(linear_model$fitted.values, residuals(linear_model),
+     main = "Residuals vs Fitted",
+     xlab = "Fitted values",
+     ylab = "Residuals")
+abline(h = 0, col = "red")
+```
+
+```{r}
+qqnorm(residuals(linear_model), main = "Q-Q Plot")
+qqline(residuals(linear_model), col = "red")
+```
+
+```{r}
+library(car)
+vif(linear_model)
+
+```
+
+```{r}
+cor(data$Chest, data$Waist)
+```
+
+```{r}
+# Load necessary packages
+library(glmnet)
+library(car)
+
+# Prepare the predictor matrix (independent variables)
+X <- as.matrix(data[, c("Age", "Wrist", "Waist", "Height", "Chest")])
+
+# Prepare the response variable (dependent variable)
+y <- data$Pct.BF
+
+# Fit the Lasso regression model using cross-validation
+lasso_model <- cv.glmnet(X, y, alpha = 1)
+
+# Get the optimal lambda value
+best_lambda <- lasso_model$lambda.min
+print(best_lambda)
+
+# Extract the coefficients at the optimal lambda
+lasso_coefficients <- coef(lasso_model, s = "lambda.min")
+print(lasso_coefficients)
+
+
+
+```
+
